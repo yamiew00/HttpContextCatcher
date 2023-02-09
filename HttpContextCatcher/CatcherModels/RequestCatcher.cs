@@ -11,7 +11,7 @@ namespace HttpContextCatcher
 
         public string Method { get; set; }
 
-        public object Body { get; set; }
+        public string Body { get; set; }
 
         public Dictionary<string, string> Queries { get; set; }
 
@@ -19,7 +19,7 @@ namespace HttpContextCatcher
 
         public RequestCatcher(string path,
                               string method,
-                              object body,
+                              string body,
                               Dictionary<string, string> queries,
                               Dictionary<string, string> headers)
         {

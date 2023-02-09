@@ -1,6 +1,5 @@
 ﻿using HttpContextCatcher.CatcherManager;
 using Microsoft.AspNetCore.Http;
-using Newtonsoft.Json;
 using System;
 using System.IO;
 using System.Threading.Tasks;
@@ -55,7 +54,7 @@ namespace HttpContextCatcher
                 await memStream.CopyToAsync(originalBody);
 
                 responseCatcher = new ResponseCatcher(statusCode: context.Response.StatusCode,
-                                                      body: TryParseJson(responseString));
+                                                      body: responseString);
             }
             catch (Exception ex)
             {
@@ -65,7 +64,7 @@ namespace HttpContextCatcher
                     throw ex;
                 }
 
-                object responseBody = default;
+                string responseBody = default;
                 int statusCode = default;
 
                 //有可能response已被其他middleware修改過
@@ -73,7 +72,7 @@ namespace HttpContextCatcher
                 {
                     //擷取人為修改的response
                     memStream.Position = 0;
-                    responseBody = TryParseJson(new StreamReader(memStream).ReadToEnd());
+                    responseBody = new StreamReader(memStream).ReadToEnd();
 
                     memStream.Position = 0;
                     await memStream.CopyToAsync(originalBody);
@@ -142,18 +141,6 @@ namespace HttpContextCatcher
         private bool ResponseHasContent(HttpContext context)
         {
             return context.Response.Body.Length > 0;
-        }
-
-        private object TryParseJson(string @string)
-        {
-            try
-            {
-                return JsonConvert.DeserializeObject<object>(@string);
-            }
-            catch
-            {
-                return @string;
-            }
         }
     }
 }

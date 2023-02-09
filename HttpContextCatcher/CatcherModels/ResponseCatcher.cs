@@ -6,12 +6,12 @@ namespace HttpContextCatcher
     {
         public int? StatusCode { get; set; }
 
-        public object Body { get; set; }
+        public string Body { get; set; }
 
         public decimal ResSecond { get; set; }
 
         public ResponseCatcher(int statusCode,
-                               object body)
+                               string body)
         {
             StatusCode = statusCode;
             Body = body;

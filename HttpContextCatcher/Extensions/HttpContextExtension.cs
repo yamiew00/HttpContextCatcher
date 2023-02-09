@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Http;
-using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -25,17 +24,15 @@ namespace HttpContextCatcher
                                         item => item.Value.ToString());
         }
 
-        internal static async Task<object> GetJsonRequestBody(this HttpContext context)
+        internal static async Task<string> GetJsonRequestBody(this HttpContext context)
         {
             var request = context.Request;
             request.EnableBuffering();
             var requestStream = new StreamReader(request.Body);
-
             var content = await requestStream.ReadToEndAsync();
-            var item = JsonConvert.DeserializeObject<object>(content);
 
             request.Body.Position = 0;
-            return item;
+            return content;
         }
     }
 }
