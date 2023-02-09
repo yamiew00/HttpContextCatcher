@@ -17,15 +17,19 @@ namespace HttpContextCatcher
 
         public ExceptionCatcher Exception { get; set; }
 
+        public ItemCatcher Items { get; set; }
+
         public ContextCatcher(DateTime time,
                               RequestCatcher request,
                               ResponseCatcher response,
-                              ExceptionCatcher exception)
+                              ExceptionCatcher exception,
+                              ItemCatcher items)
         {
             Time = time;
             Request = request;
             Response = response;
             Exception = exception;
+            Items = items;
         }
 
         internal void SetResSecond(decimal resSecond)

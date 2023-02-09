@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace HttpContextCatcher
@@ -29,6 +30,7 @@ namespace HttpContextCatcher
                 await CreateRequestCatcher(context);
             ResponseCatcher responseCatcher = default;
             ExceptionCatcher exceptionCatcher = default;
+            ItemCatcher itemCatcher = default;
             DateTime now = DateTime.Now; //時間要靠傳入的
 
             //response part1
@@ -40,6 +42,16 @@ namespace HttpContextCatcher
             try
             {
                 await _Next(context);
+
+                if (!OptionBuilder.IsIgnoreItem)
+                {
+                    itemCatcher = new ItemCatcher
+                    {
+                        Items = context.Items.ToDictionary(item => item.Key.ToString(),
+                                                           item => item.Value)
+                    };
+                }
+
                 if(OptionBuilder.IsIgnoreResponse) 
                 {
                     context.Response.Body = originalBody;
@@ -101,7 +113,8 @@ namespace HttpContextCatcher
                 ContextCatcher contextCatcher = new ContextCatcher(now, 
                                                                    requestCatcher,
                                                                    responseCatcher,
-                                                                   exceptionCatcher);
+                                                                   exceptionCatcher,
+                                                                   itemCatcher);
                 //timing ends
                 if(!OptionBuilder.IsIgnoreResponse) contextCatcher.SetResSecond((Environment.TickCount - startTick) / 1000M);
 
