@@ -30,7 +30,6 @@ namespace HttpContextCatcher
                 await CreateRequestCatcher(context);
             ResponseCatcher responseCatcher = default;
             ExceptionCatcher exceptionCatcher = default;
-            ItemCatcher itemCatcher = default;
             DateTime now = DateTime.Now; //時間要靠傳入的
 
             //response part1
@@ -42,15 +41,6 @@ namespace HttpContextCatcher
             try
             {
                 await _Next(context);
-
-                if (!OptionBuilder.IsIgnoreItem)
-                {
-                    itemCatcher = new ItemCatcher
-                    {
-                        Items = context.Items.ToDictionary(item => item.Key.ToString(),
-                                                           item => item.Value)
-                    };
-                }
 
                 if(OptionBuilder.IsIgnoreResponse) 
                 {
@@ -113,8 +103,7 @@ namespace HttpContextCatcher
                 ContextCatcher contextCatcher = new ContextCatcher(now, 
                                                                    requestCatcher,
                                                                    responseCatcher,
-                                                                   exceptionCatcher,
-                                                                   itemCatcher);
+                                                                   exceptionCatcher);
                 //timing ends
                 if(!OptionBuilder.IsIgnoreResponse) contextCatcher.SetResSecond((Environment.TickCount - startTick) / 1000M);
 

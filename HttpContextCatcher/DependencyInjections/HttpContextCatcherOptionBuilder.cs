@@ -11,14 +11,11 @@ namespace HttpContextCatcher
 
         internal bool IsIgnoreResponse { get; private set; }
 
-        internal bool IsIgnoreItem { get; private set; }
-
         internal HttpContextCatcherOptionBuilder()
         {
             SetCatcher<DoNothingCatcherService>();
             IsIgnoreRequest = false;
             IsIgnoreResponse = false;
-            IsIgnoreItem = false;
         }
 
         public void SetCatcher<T>() where T : IAsyncCatcherService
@@ -40,14 +37,6 @@ namespace HttpContextCatcher
         public void IgnoreResponse()
         {
             IsIgnoreResponse = true;
-        }
-
-        /// <summary>
-        /// httpContextCatcher will ignore HttpContext.Items
-        /// </summary>
-        public void IgnoreItem()
-        {
-            IsIgnoreItem = true;
         }
     }
 }
