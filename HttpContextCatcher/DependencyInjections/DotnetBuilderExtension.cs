@@ -1,9 +1,9 @@
-﻿using HttpContextCatcher.CatcherManager;
+﻿using HttpContextCatcher;
+using HttpContextCatcher.CatcherManager;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.DependencyInjection;
 using System;
 
-namespace HttpContextCatcher
+namespace Microsoft.Extensions.DependencyInjection
 {
     public static class DotnetBuilderExtension
     {

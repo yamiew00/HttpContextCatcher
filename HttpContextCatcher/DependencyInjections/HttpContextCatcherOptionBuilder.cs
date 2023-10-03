@@ -20,6 +20,10 @@ namespace HttpContextCatcher
 
         public void SetCatcher<T>() where T : IAsyncCatcherService
         {
+            if(CatcherType != null && CatcherType != typeof(DoNothingCatcherService))
+            {
+                throw new Exception("Currently, only one catcher can be registered. Advanced features will be available in future versions.");
+            }
             CatcherType = typeof(T);
         }
 

@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Http;
 using System;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace HttpContextCatcher
@@ -60,6 +59,18 @@ namespace HttpContextCatcher
             }
             catch (Exception ex)
             {
+                //bson cast issue
+                if (ex.GetType() == typeof(InvalidCastException) && 
+                   ex.Message == "Unable to cast object of type 'MongoDB.Bson.BsonArray' to type 'MongoDB.Bson.BsonBoolean'.")
+                {
+                    var errorMessage =
+@"Please add the .AddBsonSerializer() method to the IMVCBuilder to parse BSON formatted data.
+Example:
+    builder.Services.AddControllers()
+                .AddBsonSerializer();";                    
+                    ex = new InvalidCastException(errorMessage);
+                }
+
                 if (OptionBuilder.IsIgnoreResponse)
                 {
                     context.Response.Body = originalBody;
