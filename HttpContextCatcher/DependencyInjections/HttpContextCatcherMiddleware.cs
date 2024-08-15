@@ -23,69 +23,78 @@ namespace HttpContextCatcher
 
         public async Task Invoke(HttpContext context)
         {
-            var startTick = Environment.TickCount;
-            RequestCatcher requestCatcher = OptionBuilder.IsIgnoreRequest ? 
-                default : 
+            RequestCatcher requestCatcher = OptionBuilder.IsIgnoreRequest ?
+                default :
                 await CreateRequestCatcher(context);
             ResponseCatcher responseCatcher = default;
             ExceptionCatcher exceptionCatcher = default;
-            DateTime now = DateTime.Now; //時間要靠傳入的
+            DateTime now = DateTime.Now; // 獲取當前時間
 
-            //response part1
-            Stream originalBody = context.Response.Body;
+            // response part1
+            Stream originalBody = context.Response.Body; // 儲存原始的 response.Body
             using var memStream = new MemoryStream();
-            context.Response.Body = memStream;
+            context.Response.Body = memStream; // 將 response.Body 替換為記憶體流
 
-            //執行下一步 (順序很重要)
+            int startTick = Environment.TickCount;
+
             try
             {
+                // 執行下一步中介層邏輯
                 await _Next(context);
 
-                if(OptionBuilder.IsIgnoreResponse) 
-                {
-                    context.Response.Body = originalBody;
-                    return;
-                }
+                // 如果設定忽略 response，就直接將內容寫回原始 Body
+                //if (OptionBuilder.IsIgnoreResponse)
+                //{
+                //    memStream.Position = 0;
+                //    await memStream.CopyToAsync(originalBody); // 將內容寫回原始的 response.Body
+                //    context.Response.Body = originalBody; // 還原 response.Body
+                //    return;
+                //}
 
-                //擷取人為修改的response
+                // 獲取 response 的內容
                 memStream.Position = 0;
-                string responseString = new StreamReader(memStream).ReadToEnd();
+                string responseString = await new StreamReader(memStream).ReadToEndAsync();
+                Console.WriteLine($"Response captured: {responseString}"); // 診斷輸出
 
                 memStream.Position = 0;
-                await memStream.CopyToAsync(originalBody);
+                await memStream.CopyToAsync(originalBody); // 將內容寫回到原始的 response.Body
 
                 responseCatcher = new ResponseCatcher(statusCode: context.Response.StatusCode,
                                                       body: responseString);
             }
             catch (Exception ex)
             {
-                //bson cast issue
-                if (ex.GetType() == typeof(InvalidCastException) && 
+                // 處理特定的 BSON 轉換錯誤
+                if (ex is InvalidCastException &&
                    ex.Message == "Unable to cast object of type 'MongoDB.Bson.BsonArray' to type 'MongoDB.Bson.BsonBoolean'.")
                 {
                     var errorMessage =
-@"Please add the .AddBsonSerializer() method to the IMVCBuilder to parse BSON formatted data.
+        @"Please add the .AddBsonSerializer() method to the IMVCBuilder to parse BSON formatted data.
 Example:
     builder.Services.AddControllers()
-                .AddBsonSerializer();";                    
+                .AddBsonSerializer();";
                     ex = new InvalidCastException(errorMessage);
                 }
 
-                if (OptionBuilder.IsIgnoreResponse)
-                {
-                    context.Response.Body = originalBody;
-                    throw ex;
-                }
+                // 如果忽略 response，則直接還原原始 response.Body 並拋出異常
+                //if (OptionBuilder.IsIgnoreResponse)
+                //{
+                //    memStream.Position = 0;
+                //    await memStream.CopyToAsync(originalBody); // 確保寫回原始的 Body
+                //    context.Response.Body = originalBody;
+                //    throw;
+                //}
 
                 string responseBody = default;
                 int statusCode = default;
 
-                //有可能response已被其他middleware修改過
+                // 判斷 response 是否已有內容
                 if (ResponseHasContent(context))
                 {
-                    //擷取人為修改的response
+                    // 擷取可能已被修改的 response 內容
                     memStream.Position = 0;
-                    responseBody = new StreamReader(memStream).ReadToEnd();
+                    responseBody = await new StreamReader(memStream).ReadToEndAsync();
+                    Console.WriteLine($"Exception response captured: {responseBody}"); // 診斷輸出
 
                     memStream.Position = 0;
                     await memStream.CopyToAsync(originalBody);
@@ -94,7 +103,7 @@ Example:
                 }
                 else
                 {
-                    //沒被修改過，直接拋exception到最外層 → 會顯示ex.Message 且 500 statusCode 
+                    // response 沒有被修改過，直接拋出異常
                     responseBody = $"{ex.Message}{ex.StackTrace}";
                     statusCode = StatusCodes.Status500InternalServerError;
                 }
@@ -102,26 +111,31 @@ Example:
                 responseCatcher = new ResponseCatcher(statusCode: context.Response.StatusCode,
                                                       body: responseBody);
 
-                context.Response.Body = originalBody;   //將response.body復原
+                context.Response.Body = originalBody;   // 還原 response.Body
 
-                //記下exception
+                // 記錄異常
                 exceptionCatcher = new ExceptionCatcher(ex);
 
-                throw ex; //抓到pipeline中的exception也要原封不動拋出去。
+                throw; // 將異常重新拋出
             }
             finally
             {
-                ContextCatcher contextCatcher = new ContextCatcher(now, 
+                ContextCatcher contextCatcher = new ContextCatcher(now,
                                                                    requestCatcher,
                                                                    responseCatcher,
                                                                    exceptionCatcher);
-                //timing ends
-                if(!OptionBuilder.IsIgnoreResponse) contextCatcher.SetResSecond((Environment.TickCount - startTick) / 1000M);
 
-                //deal with contextCatcher by option
+                // 計算響應所花的時間
+                if (!OptionBuilder.IsIgnoreResponse)
+                    contextCatcher.SetResSecond((Environment.TickCount - startTick) / 1000M);
+
+                // 處理 contextCatcher
                 await CatcherService.OnCatchAsync(contextCatcher);
             }
         }
+
+
+
 
         /// <summary>
         /// Get detailed content from HttpContext.Request
