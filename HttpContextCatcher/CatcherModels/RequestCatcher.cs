@@ -17,17 +17,21 @@ namespace HttpContextCatcher
 
         public Dictionary<string, string> Headers { get; set; }
 
+        public string ContentType { get; set; }
+
         public RequestCatcher(string path,
                               string method,
                               string body,
                               Dictionary<string, string> queries,
-                              Dictionary<string, string> headers)
+                              Dictionary<string, string> headers,
+                              string contentType)
         {
             Path = path;
             Method = method;
             Body = body;
             Queries = queries;
             Headers = headers;
+            ContentType = contentType;
         }
     }
 }

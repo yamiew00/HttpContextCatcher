@@ -60,7 +60,8 @@ namespace HttpContextCatcher
                 await memStream.CopyToAsync(originalBody); // 將內容寫回到原始的 response.Body
 
                 responseCatcher = new ResponseCatcher(statusCode: context.Response.StatusCode,
-                                                      body: responseString);
+                                                      body: responseString,
+                                                      contentType: context.Response.ContentType);
             }
             catch (Exception ex)
             {
@@ -109,7 +110,8 @@ Example:
                 }
 
                 responseCatcher = new ResponseCatcher(statusCode: context.Response.StatusCode,
-                                                      body: responseBody);
+                                                      body: responseBody,
+                                                      contentType: context.Response.ContentType);
 
                 context.Response.Body = originalBody;   // 還原 response.Body
 
@@ -148,7 +150,7 @@ Example:
                 var headers = context.GetRequestHeaders();
                 var body = await context.GetJsonRequestBody();
 
-                return new RequestCatcher(path, method, body, queries, headers);
+                return new RequestCatcher(path, method, body, queries, headers, context.Request.ContentType);
             }
             catch
             {

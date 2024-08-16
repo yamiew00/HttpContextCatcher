@@ -8,11 +8,15 @@ namespace HttpContextCatcher
 
         public string Body { get; set; }
 
+        public string ContentType { get; set; }
+
         public ResponseCatcher(int statusCode,
-                               string body)
+                               string body,
+                               string contentType)
         {
             StatusCode = statusCode;
             Body = body;
+            ContentType = contentType;
         }
     }
 }
