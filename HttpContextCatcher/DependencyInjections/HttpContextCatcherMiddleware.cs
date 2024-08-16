@@ -23,6 +23,8 @@ namespace HttpContextCatcher
 
         public async Task Invoke(HttpContext context)
         {
+            int startTick = Environment.TickCount;
+
             RequestCatcher requestCatcher = OptionBuilder.IsIgnoreRequest ?
                 default :
                 await CreateRequestCatcher(context);
@@ -30,12 +32,10 @@ namespace HttpContextCatcher
             ExceptionCatcher exceptionCatcher = default;
             DateTime now = DateTime.Now; // 獲取當前時間
 
-            // response part1
+            // 
             Stream originalBody = context.Response.Body; // 儲存原始的 response.Body
             using var memStream = new MemoryStream();
             context.Response.Body = memStream; // 將 response.Body 替換為記憶體流
-
-            int startTick = Environment.TickCount;
 
             try
             {
@@ -43,13 +43,13 @@ namespace HttpContextCatcher
                 await _Next(context);
 
                 // 如果設定忽略 response，就直接將內容寫回原始 Body
-                //if (OptionBuilder.IsIgnoreResponse)
-                //{
-                //    memStream.Position = 0;
-                //    await memStream.CopyToAsync(originalBody); // 將內容寫回原始的 response.Body
-                //    context.Response.Body = originalBody; // 還原 response.Body
-                //    return;
-                //}
+                if (OptionBuilder.IsIgnoreResponse)
+                {
+                    memStream.Position = 0;
+                    await memStream.CopyToAsync(originalBody); // 將內容寫回原始的 response.Body
+                    context.Response.Body = originalBody; // 還原 response.Body
+                    return;
+                }
 
                 // 獲取 response 的內容
                 memStream.Position = 0;
@@ -77,13 +77,13 @@ Example:
                 }
 
                 // 如果忽略 response，則直接還原原始 response.Body 並拋出異常
-                //if (OptionBuilder.IsIgnoreResponse)
-                //{
-                //    memStream.Position = 0;
-                //    await memStream.CopyToAsync(originalBody); // 確保寫回原始的 Body
-                //    context.Response.Body = originalBody;
-                //    throw;
-                //}
+                if (OptionBuilder.IsIgnoreResponse)
+                {
+                    memStream.Position = 0;
+                    await memStream.CopyToAsync(originalBody); // 確保寫回原始的 Body
+                    context.Response.Body = originalBody;
+                    throw;
+                }
 
                 string responseBody = default;
                 int statusCode = default;
@@ -126,16 +126,12 @@ Example:
                                                                    exceptionCatcher);
 
                 // 計算響應所花的時間
-                if (!OptionBuilder.IsIgnoreResponse)
-                    contextCatcher.SetResSecond((Environment.TickCount - startTick) / 1000M);
+                contextCatcher.CostSecond = (Environment.TickCount - startTick) / 1000M;
 
                 // 處理 contextCatcher
                 await CatcherService.OnCatchAsync(contextCatcher);
             }
         }
-
-
-
 
         /// <summary>
         /// Get detailed content from HttpContext.Request

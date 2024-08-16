@@ -17,6 +17,8 @@ namespace HttpContextCatcher
 
         public ExceptionCatcher Exception { get; set; }
 
+        public decimal CostSecond { get; internal set; }
+
 
         public ContextCatcher(DateTime time,
                               RequestCatcher request,
@@ -27,20 +29,6 @@ namespace HttpContextCatcher
             Request = request;
             Response = response;
             Exception = exception;
-        }
-
-        internal void SetResSecond(decimal resSecond)
-        {
-            //response will be null if json deserization failed.
-            if (Response == null)
-            {
-                Response = new ResponseCatcher(resSecond);
-                return;
-            }
-            else
-            {
-                Response.ResSecond = resSecond;
-            }
         }
     }
 }
