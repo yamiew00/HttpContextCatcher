@@ -30,7 +30,7 @@ namespace HttpContextCatcher
                 await CreateRequestCatcher(context);
             ResponseCatcher responseCatcher = default;
             ExceptionCatcher exceptionCatcher = default;
-            DateTime now = DateTime.Now; // 獲取當前時間
+            DateTime now = DateTime.UtcNow; // 獲取當前時間
 
             // 
             Stream originalBody = context.Response.Body; // 儲存原始的 response.Body
@@ -59,8 +59,7 @@ namespace HttpContextCatcher
                 memStream.Position = 0;
                 await memStream.CopyToAsync(originalBody); // 將內容寫回到原始的 response.Body
 
-                responseCatcher = new ResponseCatcher(statusCode: context.Response.StatusCode,
-                                                      body: responseString,
+                responseCatcher = new ResponseCatcher(body: responseString,
                                                       contentType: context.Response.ContentType);
             }
             catch (Exception ex)
@@ -109,8 +108,7 @@ Example:
                     statusCode = StatusCodes.Status500InternalServerError;
                 }
 
-                responseCatcher = new ResponseCatcher(statusCode: context.Response.StatusCode,
-                                                      body: responseBody,
+                responseCatcher = new ResponseCatcher(body: responseBody,
                                                       contentType: context.Response.ContentType);
 
                 context.Response.Body = originalBody;   // 還原 response.Body
@@ -122,13 +120,12 @@ Example:
             }
             finally
             {
-                ContextCatcher contextCatcher = new ContextCatcher(now,
-                                                                   requestCatcher,
-                                                                   responseCatcher,
-                                                                   exceptionCatcher);
-
-                // 計算響應所花的時間
-                contextCatcher.CostSecond = (Environment.TickCount - startTick) / 1000M;
+                ContextCatcher contextCatcher = new ContextCatcher(time: now,
+                                                                   request: requestCatcher,
+                                                                   response: responseCatcher,
+                                                                   exception: exceptionCatcher,
+                                                                   statusCode: context.Response.StatusCode,
+                                                                   costSecond: (Environment.TickCount - startTick) / 1000M);
 
                 // 處理 contextCatcher
                 await CatcherService.OnCatchAsync(contextCatcher);

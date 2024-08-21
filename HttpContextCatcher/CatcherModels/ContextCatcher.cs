@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace HttpContextCatcher
 {
@@ -9,26 +7,31 @@ namespace HttpContextCatcher
     /// </summary>
     public class ContextCatcher
     {
-        public DateTime Time { get; set; }
+        public DateTime Time { get; private set; }
 
-        public RequestCatcher Request { get; set; }
+        public RequestCatcher Request { get; private set; }
 
-        public ResponseCatcher Response { get; set; }
+        public ResponseCatcher Response { get; private set; }
 
-        public ExceptionCatcher Exception { get; set; }
+        public ExceptionCatcher Exception { get; private set; }
 
-        public decimal CostSecond { get; internal set; }
+        public int StatusCode { get; private set; }
 
+        public decimal CostSecond { get; private set; }
 
         public ContextCatcher(DateTime time,
                               RequestCatcher request,
                               ResponseCatcher response,
-                              ExceptionCatcher exception)
+                              ExceptionCatcher exception,
+                              int statusCode,
+                              decimal costSecond)
         {
             Time = time;
             Request = request;
             Response = response;
             Exception = exception;
+            StatusCode = statusCode;
+            CostSecond = costSecond;
         }
     }
 }
