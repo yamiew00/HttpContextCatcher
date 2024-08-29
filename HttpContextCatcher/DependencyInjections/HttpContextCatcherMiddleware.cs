@@ -30,93 +30,33 @@ namespace HttpContextCatcher
                 await CreateRequestCatcher(context);
             ResponseCatcher responseCatcher = default;
             ExceptionCatcher exceptionCatcher = default;
-            DateTime now = DateTime.UtcNow; // 獲取當前時間
-
-            // 
-            Stream originalBody = context.Response.Body; // 儲存原始的 response.Body
-            using var memStream = new MemoryStream();
-            context.Response.Body = memStream; // 將 response.Body 替換為記憶體流
+            DateTime now = DateTime.UtcNow;
 
             try
             {
-                // 執行下一步中介層邏輯
-                await _Next(context);
-
-                // 如果設定忽略 response，就直接將內容寫回原始 Body
-                if (OptionBuilder.IsIgnoreResponse)
+                //判斷response有沒有抓取的必要
+                if (!OptionBuilder.IsIgnoreResponse)
                 {
+                    Stream originalBody = context.Response.Body;
+                    using var memStream = new MemoryStream();
+                    context.Response.Body = memStream;
+
+                    await _Next(context);
+
                     memStream.Position = 0;
-                    await memStream.CopyToAsync(originalBody); // 將內容寫回原始的 response.Body
-                    context.Response.Body = originalBody; // 還原 response.Body
-                    return;
-                }
-
-                // 獲取 response 的內容
-                memStream.Position = 0;
-                string responseString = await new StreamReader(memStream).ReadToEndAsync();
-                Console.WriteLine($"Response captured: {responseString}"); // 診斷輸出
-
-                memStream.Position = 0;
-                await memStream.CopyToAsync(originalBody); // 將內容寫回到原始的 response.Body
-
-                responseCatcher = new ResponseCatcher(body: responseString,
-                                                      contentType: context.Response.ContentType);
-            }
-            catch (Exception ex)
-            {
-                // 處理特定的 BSON 轉換錯誤
-                if (ex is InvalidCastException &&
-                   ex.Message == "Unable to cast object of type 'MongoDB.Bson.BsonArray' to type 'MongoDB.Bson.BsonBoolean'.")
-                {
-                    var errorMessage =
-        @"Please add the .AddBsonSerializer() method to the IMVCBuilder to parse BSON formatted data.
-Example:
-    builder.Services.AddControllers()
-                .AddBsonSerializer();";
-                    ex = new InvalidCastException(errorMessage);
-                }
-
-                // 如果忽略 response，則直接還原原始 response.Body 並拋出異常
-                if (OptionBuilder.IsIgnoreResponse)
-                {
-                    memStream.Position = 0;
-                    await memStream.CopyToAsync(originalBody); // 確保寫回原始的 Body
-                    context.Response.Body = originalBody;
-                    throw;
-                }
-
-                string responseBody = default;
-                int statusCode = default;
-
-                // 判斷 response 是否已有內容
-                if (ResponseHasContent(context))
-                {
-                    // 擷取可能已被修改的 response 內容
-                    memStream.Position = 0;
-                    responseBody = await new StreamReader(memStream).ReadToEndAsync();
-                    Console.WriteLine($"Exception response captured: {responseBody}"); // 診斷輸出
+                    string responseString = await new StreamReader(memStream).ReadToEndAsync();
+                    responseCatcher = new ResponseCatcher(body: responseString, contentType: context.Response.ContentType);
 
                     memStream.Position = 0;
                     await memStream.CopyToAsync(originalBody);
-
-                    statusCode = context.Response.StatusCode;
                 }
                 else
                 {
-                    // response 沒有被修改過，直接拋出異常
-                    responseBody = $"{ex.Message}{ex.StackTrace}";
-                    statusCode = StatusCodes.Status500InternalServerError;
+                    await _Next(context);
                 }
-
-                responseCatcher = new ResponseCatcher(body: responseBody,
-                                                      contentType: context.Response.ContentType);
-
-                context.Response.Body = originalBody;   // 還原 response.Body
-
-                // 記錄異常
-                exceptionCatcher = new ExceptionCatcher(ex);
-
-                throw; // 將異常重新拋出
+            }
+            catch (Exception ex)
+            {
             }
             finally
             {
@@ -127,7 +67,6 @@ Example:
                                                                    statusCode: context.Response.StatusCode,
                                                                    costSecond: (Environment.TickCount - startTick) / 1000M);
 
-                // 處理 contextCatcher
                 await CatcherService.OnCatchAsync(contextCatcher);
             }
         }
@@ -153,16 +92,6 @@ Example:
             {
                 return default;
             }
-        }
-
-        /// <summary>
-        /// Return true if httpContext.Response has been modified by other middleware
-        /// </summary>
-        /// <param name="context"></param>
-        /// <returns></returns>
-        private bool ResponseHasContent(HttpContext context)
-        {
-            return context.Response.Body.Length > 0;
         }
     }
 }
