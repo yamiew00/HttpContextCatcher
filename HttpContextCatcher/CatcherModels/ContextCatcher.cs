@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Http;
+using System;
 
 namespace HttpContextCatcher
 {
@@ -19,12 +20,15 @@ namespace HttpContextCatcher
 
         public decimal CostSecond { get; private set; }
 
+        public HttpContext HttpContext { get; private set; }
+
         public ContextCatcher(DateTime time,
                               RequestCatcher request,
                               ResponseCatcher response,
                               ExceptionCatcher exception,
                               int statusCode,
-                              decimal costSecond)
+                              decimal costSecond,
+                              HttpContext httpContext)
         {
             Time = time;
             Request = request;
@@ -32,6 +36,7 @@ namespace HttpContextCatcher
             Exception = exception;
             StatusCode = statusCode;
             CostSecond = costSecond;
+            HttpContext = httpContext;
         }
     }
 }

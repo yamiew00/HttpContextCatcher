@@ -65,7 +65,8 @@ namespace HttpContextCatcher
                                                                    response: responseCatcher,
                                                                    exception: exceptionCatcher,
                                                                    statusCode: context.Response.StatusCode,
-                                                                   costSecond: (Environment.TickCount - startTick) / 1000M);
+                                                                   costSecond: (Environment.TickCount - startTick) / 1000M,
+                                                                   httpContext: context);
 
                 await CatcherService.OnCatchAsync(contextCatcher);
             }
